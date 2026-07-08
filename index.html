@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Score-to-MIDI Bridge (FL Studio 연동 지원)</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- MIDI Writer JS: 클라이언트 사이드 MIDI 파일 생성을 위한 라이브러리 (로컬 캐시 버전) -->
+  <script src="midi-writer-js.js"></script>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="logo-glow"></div>
+        <div>
+          <h1>AI Score-to-<span>MIDI Bridge</span></h1>
+          <div class="subtitle">AI 기반 악보-MIDI 변환 및 멀티트랙 자동 편곡 (FL Studio 최적화)</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" id="btnDemo">⚡ 데모 로드</button>
+        <button class="btn" id="btnSettings">⚙️ 설정 (API Key)</button>
+      </div>
+    </header>
+
+    <!-- Main Grid Layout: Left Column & Right Column 2-Bay Layout -->
+    <div class="main-grid">
+      
+      <!-- Left Column: Actions & Guides -->
+      <div class="left-column">
+        
+        <!-- Card 1: AI Sheet Music Analyzer -->
+        <div class="card">
+          <div class="card-title">
+            <div class="card-title-icon">📄 AI 악보 분석기</div>
+            <span style="font-size: 0.8rem; color: var(--neon-blue); font-family: var(--font-code);">AI Score Transcriber</span>
+          </div>
+
+          <div class="upload-grid" style="grid-template-columns: 1fr;">
+            <!-- Sheet Music Upload Dropzone -->
+            <div class="dropzone sheet-dz" id="sheetDropzone" style="min-height: 140px; height: auto; padding: 1.5rem 1rem;">
+              <span class="dropzone-icon">📄</span>
+              <h3>악보 이미지 업로드 (다중 선택 가능)</h3>
+              <p>오선지, 타브 악보 스캔본 (여러 장 동시 드래그 가능)</p>
+              <input type="file" id="sheetInput" class="file-input" accept="image/*" multiple>
+              
+              <!-- 업로드된 다중 악보 파일 리스트 -->
+              <div id="sheetFilesList" style="display: none; width: 100%; margin-top: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                <!-- JS에서 동적 렌더링 -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Analyzer Action Settings -->
+          <div style="margin-top: 1rem;">
+            <button class="btn btn-primary" id="btnAnalyzeSheet" style="font-size: 0.95rem; padding: 0.75rem 1.2rem; width: 100%; justify-content: center; font-weight: 700;">
+              🔍 AI 악보 분석 및 편곡 시작
+            </button>
+            
+            <!-- Auto-Arrange Checkbox -->
+            <div style="display: flex; align-items: flex-start; gap: 0.6rem; margin-top: 1rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1rem; width: 100%;">
+              <input type="checkbox" id="chkAutoArrange" checked style="accent-color: var(--neon-orange); cursor: pointer; width: 18px; height: 18px; margin-top: 0.1rem;">
+              <label for="chkAutoArrange" style="font-size: 0.85rem; cursor: pointer; font-weight: 600; color: var(--text-main); line-height: 1.4;">
+                ✨ AI 편곡 레이어 자동 빌드<br>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">
+                  (추출된 멜로디에 부합하는 피아노 코드, 기타 아르페지오 및 베이스 라인을 개별 트랙으로 자동 편곡)
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: FL Studio Workflow Guide -->
+        <div class="card" style="margin-top: 1.5rem; border-color: rgba(0, 240, 255, 0.15);">
+          <div class="card-title" style="color: var(--neon-blue);">
+            <div class="card-title-icon">💡 FL Studio 연동 가이드</div>
+          </div>
+          <div>
+            <ul class="instructions-list">
+              <li><strong>MIDI 드래그 앤 드롭</strong>: <code>FL Studio용 MIDI 내보내기</code> 버튼으로 저장된 <code>.mid</code> 파일을 다운로드한 뒤, FL Studio의 <strong>Playlist(플레이리스트)</strong> 혹은 <strong>Channel Rack(채널 랙)</strong> 위로 드래그 앤 드롭합니다.</li>
+              <li><strong>멀티트랙 로딩</strong>: 내보내진 MIDI 파일은 멜로디(Melody), 코드(Chords), 베이스(Bass) 등 악기 성부별로 <strong>각각 다른 트랙(Track)으로 자동 분할</strong>되도록 인코딩되어 가상악기(Sytrus, FL Keys 등)에 쉽게 개별 연결할 수 있습니다.</li>
+              <li><strong>피아노 롤 개별 편집</strong>: DAW에 로드된 각 미디 트랙은 음(Note) 단위로 완전히 분할되어 있으므로, FL Studio 피아노 롤 상에서 음정을 수정하거나 벨로시티를 튜닝하는 등 세밀한 가공이 즉시 가능합니다.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: MIDI Track Viewer & Sequencer Control -->
+      <div class="right-column">
+        
+        <!-- Card 3: AI 복원 MIDI 트랙 & 시퀀서 -->
+        <div class="card" style="height: 100%; display: flex; flex-direction: column;">
+          <div class="card-title">
+            <div class="card-title-icon">🎼 AI 복원 MIDI 트랙 & 시퀀서</div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn" id="btnResetAll" style="font-size: 0.8rem; padding: 0.45rem 0.9rem; font-weight: 700; border-color: var(--neon-orange); color: var(--neon-orange); background: rgba(255, 85, 0, 0.05);">
+                🗑️ 전체 초기화
+              </button>
+              <button class="btn btn-success" id="btnDownloadMIDI" style="font-size: 0.8rem; padding: 0.45rem 0.9rem; font-weight: 700;">
+                💾 FL Studio용 MIDI 내보내기
+              </button>
+            </div>
+          </div>
+
+          <!-- Playback & Tempo Control Bar -->
+          <div class="control-bar" style="margin-bottom: 1rem;">
+            <div class="play-controls">
+              <button class="btn" id="btnMidiPlay" style="border-color: var(--neon-green); font-size: 0.85rem; padding: 0.5rem 0.9rem;">▶️ 재생 (Preview)</button>
+              <button class="btn" id="btnMidiStop" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">⏹️ 정지</button>
+            </div>
+            
+            <div class="tempo-controls">
+              <div class="tempo-input-wrapper">
+                <input type="number" class="tempo-input" id="bpmInput" value="120" min="60" max="220">
+                <span class="tempo-label">BPM</span>
+              </div>
+            </div>
+          </div>
+          
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem; border-left: 2px solid var(--neon-blue); padding-left: 0.5rem;" id="midiStatusText">
+            악보 이미지를 올려 AI 분석을 진행하거나 데모를 로드해 주세요.
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 1.5rem; flex: 1;">
+            <!-- Track List -->
+            <div class="midi-panel">
+              <h3 style="font-size: 0.95rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.5rem;">추출된 트랙 정보</h3>
+              <div class="midi-tracks-list" id="midiTracksContainer" style="max-height: 200px;">
+                <div style="text-align: center; color: var(--text-muted); padding: 1.5rem 0; font-size: 0.85rem;">
+                  현재 추출된 MIDI 트랙이 없습니다.
+                </div>
+              </div>
+            </div>
+
+            <!-- Note Visual Scrolling Board -->
+            <div style="display: flex; flex-direction: column; flex: 1; min-height: 180px;">
+              <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-main);">노트 모니터 (AI 추출 악보 목록)</h3>
+              <div class="note-board" id="noteBoardContainer" style="flex: 1; overflow-y: auto; max-height: 260px;">
+                <div style="padding: 1.5rem 0; text-align: center; font-size: 0.85rem;">대기 중...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div> <!-- End Main Grid -->
+
+  </div> <!-- End Container -->
+
+  <!-- API Key settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">⚙️ AI 분석 설정</h2>
+        <button class="close-btn" id="btnSettingsClose">&times;</button>
+      </div>
+      
+      <div class="form-group">
+        <label class="form-label" for="apiKeyInput">Gemini API Key</label>
+        <input type="password" class="form-input" id="apiKeyInput" placeholder="AI-zaSy...">
+        <div class="form-note">
+          Gemini API 키는 이미지 기반 악보 OCR 분석에 필수적입니다. 키가 없으시다면 <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>에서 무료로 발급받으실 수 있습니다.
+          <br><strong style="color: var(--neon-orange);">* 키는 사용자의 로컬 브라우저(LocalStorage)에만 안전하게 저장됩니다.</strong>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="modelSelect">Gemini AI 모델 선택</label>
+        <select class="form-input" id="modelSelect" style="background-color: rgba(0, 0, 0, 0.25); color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 0.75rem;">
+          <option value="gemini-2.5-flash" selected>gemini-2.5-flash (추천/가장 안정적)</option>
+          <option value="gemini-3.5-flash">gemini-3.5-flash (최신 모델/현재 부하 심함)</option>
+          <option value="gemini-2.0-flash">gemini-2.0-flash (지원 종료)</option>
+          <option value="gemini-1.5-flash">gemini-1.5-flash (지원 종료)</option>
+          <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+          <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="promptInput">AI 분석 프롬프트 지침 (시스템)</label>
+        <textarea class="form-input" id="promptInput" rows="5" style="resize: vertical; font-family: sans-serif; font-size: 0.85rem;"></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="btnSaveSettings" style="width: 100%; justify-content: center;">설정 저장</button>
+    </div>
+  </div>
+
+  <!-- Status Toaster / Process Monitor -->
+  <div class="status-toast" id="statusToast">
+    <div class="status-spinner"></div>
+    <div class="status-text" id="statusToastText">AI 분석 중...</div>
+  </div>
+
+  <!-- Main JavaScript File -->
+  <script src="app.js?v=6"></script>
+</body>
+</html>

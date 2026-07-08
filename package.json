@@ -1,0 +1,12 @@
+{
+  "name": "ai-sampler-midi-bridge",
+  "version": "1.0.0",
+  "description": "AI Sampler and MIDI Bridge for FL Studio integration",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx -y http-server -p 3000"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
